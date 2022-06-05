@@ -7,11 +7,11 @@ services:
       - ./data/db:/var/lib/mysql
     restart: unless-stopped
     env_file:
-      - .env
+      - ./configs/.env
 
   wiki:
     build:
-      context: ./WikiDocker
+      context: ./
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:

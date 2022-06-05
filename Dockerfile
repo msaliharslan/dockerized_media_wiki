@@ -1,6 +1,6 @@
 FROM alpine:3.15
 
-# Install the packages
+# Install required packages
 RUN apk add --no-cache \
     php7 \
     php7-pecl-apcu \
@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     php7-xmlreader \
     php7-xmlwriter \
     php7-xmlrpc \
+    php7-simplexml \
     php7-mysqli \
     php7-mysqlnd \
     php7-calendar \
@@ -21,6 +22,8 @@ RUN apk add --no-cache \
     php7-ctype \
     php7-session \
     php7-dom \
+    php7-phar \
+    php7-tokenizer \
     imagemagick \
     libgd \
     texlive \
@@ -29,25 +32,26 @@ RUN apk add --no-cache \
     apache2 \
     diffutils \
     git
-    
+
+# Install Composer
+COPY scripts/install_composer.sh /tmp/install_composer.sh
+RUN /tmp/install_composer.sh
+
 # Get MediaWiki
-RUN cd /var/www/localhost/htdocs && \
-    wget https://releases.wikimedia.org/mediawiki/1.37/mediawiki-1.37.2.tar.gz && \
-    tar -xzf mediawiki-1.37.2.tar.gz && \
-    mv mediawiki-1.37.2 w && \
-    rm mediawiki-1.37.2.tar.gz && \
+RUN mkdir -p /var/www/mediawiki && \
+    cd /var/www/mediawiki && \
+    wget https://releases.wikimedia.org/mediawiki/1.38/mediawiki-1.38.0.tar.gz && \
+    tar -xzf mediawiki-1.38.0.tar.gz && \
+    mv mediawiki-1.38.0 w && \
+    rm mediawiki-1.38.0.tar.gz && \
     chown -R -h apache w && \
     chgrp -R -h apache w
 
-# Create a directory for temporary files
-# RUN mkdir -p /tmp/mediawiki && \
-#     chown -R apache /tmp/mediawiki && \
-#     chgrp -R apache /tmp/mediawiki && \
-#     sed -i '/;upload_tmp_dir =/c\upload_tmp_dir = /tmp/mediawiki' /etc/php7/php.ini
-
 # Copy Configuration Files
-COPY wiki.conf /etc/apache2/conf.d 
-# COPY LocalSettings.php /var/www/localhost/htdocs/w/
+COPY /configs/wiki.conf /etc/apache2/conf.d
+
+# Change document root of apache server
+RUN sed -i 's/\/var\/www\/localhost\/htdocs/\/var\/www\/mediawiki/g' /etc/apache2/httpd.conf
 
 # Start web server
 CMD [ "httpd", "-D", "FOREGROUND" ]
